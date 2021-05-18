@@ -1,4 +1,4 @@
-1	English	x-vnd.Localizer	3287576023
+1	English	x-vnd.Localizer	660210043
 File			File
 Help			Help
 New...			New...
@@ -66,3 +66,13 @@ To link your program, add the locale and localestub libraries:\n  -l locale -l l
 To translate a string separated with colons : use:\n  menu translate$(myString$)\nThis is useful for translating menu entries because menu messages are separated with :\n\n			To translate a string separated with colons : use:\n  menu translate$(myString$)\nThis is useful for translating menu entries because menu messages are separated with :\n\n
 Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on with the following command.\n\n			Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on with the following command.\n\n
 Translated Text			Translated Text
+Developers:			Developers:
+Contact:			Contact:
+Website:			Website:
+Bug-Reporting:			Bug-Reporting:
+New in this revision			New in this revision
+- updated to yab version 1.8.			- updated to yab version 1.8.
+- Language code dropbox added.			- Language code dropbox added.
+- Bugfixes and optical fixes.			- Bugfixes and optical fixes.
+New in this revision without version number:\n			New in this revision without version number:\n
+- Original Localizer for Haiku from 2011 by Jan Bungeroth\n			- Original Localizer for Haiku from 2011 by Jan Bungeroth\n
