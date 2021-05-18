@@ -766,7 +766,7 @@ data "To translate a specific string use:\n  translate$(myString$)\n\n"
 data "To translate a string separated with colons : use:\n  menu translate$(myString$)\nThis is useful for translating menu entries because menu messages are separated with :\n\n"
 data "A new feature allows you to turn the automatic translation of widget strings off and on again.\n"
 data "To turn the automatic translation off, use:\n  localize stop\n\n"
-data "Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on wirh the following command.\n\n"
+data "Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on with the following command.\n\n"
 data "To turn it on again, use:\n  localize"
 
 label Page4

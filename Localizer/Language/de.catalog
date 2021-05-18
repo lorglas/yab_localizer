@@ -1,4 +1,4 @@
-1	de	x-vnd.Localizer	2755720043
+1	de	x-vnd.Localizer	3287576023
 File			Datei
 Help			Hilfe
 New...			Neu...
@@ -64,4 +64,5 @@ Within your code, now you can simply translate a string with:\n  B_TRANSLATE(myS
 The locale kit will search for the catalog files associated with your application's signature mimetype.\n\n			Das Locale Kit wird die passenden Katalogdateien zum Mime-Typ deiner Applikationssignatur suchen.\n\n
 To link your program, add the locale and localestub libraries:\n  -l locale -l localestub			Um dein Programm zu linken, verwenden die Libraries locale und localestub:\n  -l locale -l localestub
 To translate a string separated with colons : use:\n  menu translate$(myString$)\nThis is useful for translating menu entries because menu messages are separated with :\n\n			Um Strings zu übersetzen, die mit einem Doppelpunkt : getrennt sind, verwende:\n  menu translate$(meinString$)\nDas ist besonders bei den Menü-Messages sinnvoll, weil diese mit einem : getrennt werden.\n\n
-Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on wirh the following command.\n\n			Hinweis: Wenn localize stop verwendet werden, funktionieren die Schaltflächen nicht mehr richtig. Um diese wieder zu aktvieren, verwende den nachfolgenden Befehl.\n\n
+Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on with the following command.\n\n			Hinweis: Wenn localize stop verwendet werden, funktionieren die Schaltflächen nicht mehr richtig. Um diese wieder zu aktvieren, verwende den nachfolgenden Befehl.\n\n
+Translated Text			Übersetzter Text
