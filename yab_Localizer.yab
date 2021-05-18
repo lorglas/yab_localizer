@@ -1,0 +1,827 @@
+#!/boot/system/bin/yab
+
+doc Author: Jan Bungeroth
+doc (c) 2011 in terms of the Artistic License
+doc
+doc The Localizer helps you to localize your yab applications 
+doc and import old Zeta localizations.
+doc (c) 2021 Lorglas (Updated to yab 1.8 and bugfixes, Path$, some other fixes
+
+localize "x-vnd.Localizer"
+
+//INSTALLPATH$ = "/boot/system/non-packaged/data/yab/locale/catalogs" //This dir isn't working at the moment
+INSTALLPATH$ = "/boot/home/config/non-packaged/data/locale/catalogs/"
+mime$ = "x-vnd."
+lastdir$ = "/boot/home"
+targetLang$ = ""
+
+
+OpenMainWindow()
+About()
+Help()
+MainMessageLoop()
+CloseWindows()
+
+
+sub MainMessageLoop()
+	local finished, i, j, n, selected, tmp
+	local tmp$, t$
+	
+	dim msg$(1)
+	while(not finished)
+		n = split(message$, msg$(), "|")
+
+		for i = 1 to n
+			if(msg$(i) <> "") print msg$(i)
+			//print translate$(Start_FensterName$+":File:New...")
+		station=DROPBOX GET "Languages"
+			station=station+1
+			// menu
+			switch(msg$(i))
+			
+			case menu translate$(Start_FensterName$+":File:New...")
+				
+				NewLocale()
+				
+				break
+			case  menu translate$(Start_FensterName$+":File:Open...")
+			
+				OpenLocale()
+				
+				break
+			case menu translate$(Start_FensterName$+":File:Import ZETA...")
+				//localize stop
+				ImportZETA()
+				//localize
+				break
+			case menu translate$(Start_FensterName$+":File:Save...")
+			
+				if(SaveLocale()) then
+					alert translate$("Saving catalog completed.\n\nSaved to ") + lastdir$, "Ok", "info"
+					endif
+				
+				break
+			case menu translate$(Start_FensterName$+":File:Save and Install...")
+				if(SaveLocale()) then
+					InstallLocale()
+				endif
+				break
+			case menu translate$(Start_FensterName$+":File:Quit")
+			case Start_FensterName$+":_QuitRequested"
+			case "_QuitRequested"
+				finished = true
+				break
+			case menu translate$(Start_FensterName$+":Help:Help...")
+				stackview set "STV",3
+				break
+			case menu translate$(Start_FensterName$+":Help:About...")
+				stackview set "STV",2
+				break
+			case "close"
+				Stackview set "STV",1
+			break
+			case "Info|"
+				stackview set "STV",2
+			break
+			case "takeover"
+				item$=DROPBOX GET$ "Languages", station
+				print item$
+				TEXTCONTROL SET "TgtLang", item$
+			break
+			case "HelpForward"
+				
+				if(currentPage < maxPages) then
+					currentPage = currentPage + 1
+					ShowHelpPage(currentPage)
+					if(currentPage = maxPages) option set "HelpForward", "enabled", false
+					if(currentPage = 2) option set "HelpBack", "enabled", true
+				endif
+				break
+			case "HelpBack"
+				if(currentPage > 1) then
+					currentPage = currentPage - 1
+					ShowHelpPage(currentPage)
+					if(currentPage = 1) option set "HelpBack", "enabled", false
+					if(currentPage = maxPages - 1) option set "HelpForward", "enabled", true
+				endif
+			default
+			break
+			end switch
+
+			// textcontrols
+			
+			if(left$(msg$(i), 6) = "AddSrc") then
+				tmp$ = right$(msg$(i), len(msg$(i)) - 7)
+				selected = 0
+				for j = 1 to listbox count "SrcList"
+					t$ = listbox get$ "SrcList", j
+					if(t$ = tmp$) then
+						selected = j
+						break
+					endif
+				next j
+				if(selected = 0) then
+					localize stop
+					listbox add "SrcList", tmp$
+					localize
+					selected = listbox count "SrcList"
+				endif
+				listbox select "SrcList", selected
+				if(listbox count "TgtList" >= selected) then
+					listbox select "TgtList", selected
+				else
+					listbox select "TgtList", 0
+				endif
+			end if
+			if(left$(msg$(i), 6) = "AddTgt") then
+				listbox add "TgtList", right$(msg$(i), len(msg$(i)) - 7)
+				selected = listbox count "TgtList"
+				listbox select "TgtList", selected
+				if(listbox count "SrcList" >= selected) then
+					listbox select "SrcList", selected
+				else
+					listbox select "SrcList", 0
+				endif
+			end if
+			if(left$(msg$(i), 4) = "Mime") then
+				mime$ = right$(msg$(i), len(msg$(i)) - 5)
+			end if
+
+			// listboxes
+			if(left$(msg$(i), 7) = "SrcList") then
+				selected = val(right$(msg$(i), len(msg$(i)) - 16))
+				if(listbox count "TgtList" >= selected) then
+					listbox select "TgtList", selected
+				else
+					listbox select "TgtList", 0
+				end if
+			end if
+			if(left$(msg$(i), 7) = "TgtList") then
+				selected = val(right$(msg$(i), len(msg$(i)) - 16))
+				if(listbox count "SrcList" >= selected) then
+					listbox select "SrcList", selected
+				else
+					listbox select "SrcList", 0
+				end if
+			end if
+			if(mid$(msg$(i), 9, 7) = "_Invoke") then
+				OpenEditor(msg$(i))
+			end if
+			next i
+
+		wend
+end sub
+
+sub Header(headerText$, window$, size)
+	local w
+	local head$
+
+	head$ = window$+"Header"
+	layout "none", window$
+	view 0,20 to size,60, head$, window$
+	draw set "bgcolor", 230,230,255, head$
+	draw set "lowcolor", 230,230,255, head$
+	if(peek$("os") = "Haiku") then
+		draw set "Noto Sans Display, Bold, 18", head$
+	else
+		draw set "Swis721 BT, Bold, 18", head$
+	endif
+	draw set "highcolor", 0,0,0, head$
+	w = draw get "Text-width", headerText$, head$
+	draw text size-w-10,25, headerText$, head$
+	draw set "highcolor", 239,239,239, head$
+	draw line 0,40 to size,40, head$
+	draw set "highcolor", 185,185,185, head$
+	draw line 0,39 to size,39, head$
+	return
+end sub
+// draw a sort of 3D line
+sub MyLine(x1,y1,x2,y2,View$)
+	//print View$
+	draw set "highcolor", 185,185,185, View$
+	draw line x1,y1 to x2,y2, View$
+	draw set "highcolor", 239,239,239, View$
+	if(x1=x2) then
+		draw line x1+1,y1 to x2+1,y2, View$
+	else
+		draw line x1,y1+1 to x2,y2+1, View$
+	endif
+	draw set "highcolor", 0,0,0, View$
+	return
+end sub
+sub OpenMainWindow()
+	 
+	screenWidth = peek("desktopwidth")
+	screenHeight = peek("desktopheight")
+	WindowSize_x=800
+	WindowSize_y=600
+	localize stop
+	ProgrammName$="yab Localizer"	
+	Start_FensterName$="yab-Localizer"
+	NameView$="Programme"
+	Stackview$="STV"
+	localize 
+	//STV1 Program
+	//STV2 About
+	//STV3 HELP
+		
+	window open ((screenWidth/2)-(WindowSize_x/2)), ((screenHeight/2)-(WindowSize_y/2)) to ((screenWidth/2)+(WindowSize_x/2)), ((screenHeight/2)+(WindowSize_y/2)), Start_FensterName$,ProgrammName$
+	window set  Start_FensterName$, "MinimumTo", WindowSize_x,WindowSize_y
+	window set  Start_FensterName$, "MaximumTo", WindowSize_x,WindowSize_y
+	
+	
+	STACKVIEW 0,40 TO WindowSize_x,WindowSize_y-40, Stackview$, 3, Start_FensterName$
+	STV_y = VIEW GET "STV1", "Height"
+	STV_x = VIEW GET "STV1", "Width"
+	
+	stackview set "STV",1
+	Header(ProgrammName$, Start_FensterName$, WindowSize_x)
+	Footer("BeSly Software Solutions", Start_FensterName$, WindowSize_x)
+	
+	ViewHelp_x= VIEW GET Stackview$+"1","Width"
+	ViewHelp_y= VIEW GET Stackview$+"1","Height"	
+
+	menu "File", "New...", "N",  Start_FensterName$
+	menu "File", "Open...", "O",  Start_FensterName$
+	menu "File", "Import ZETA...", "Z", Start_FensterName$
+	menu "File", "--", "",  Start_FensterName$
+	menu "File", "Save...", "S",  Start_FensterName$
+	menu "File", "Save and Install...", "I",  Start_FensterName$
+	menu "File", "--", "",  Start_FensterName$
+	menu "File", "Quit", "Q",  Start_FensterName$
+	
+	menu "Help", "Help...", "H",  Start_FensterName$
+	menu "Help", "--", "",  Start_FensterName$
+	menu "Help", "About...", "",  Start_FensterName$
+ 
+	layout "top, left, right", Stackview$+"1"
+	//draw text 10,40, "Mime Type", Stackview$+"1"
+	//draw text 10,40, "Mime Type", Stackview$+"1"
+	textcontrol 10,25 to (ViewHelp_x/2)-20,55, "Mime", "Mime Type", mime$,  Stackview$+"1"
+	textcontrol (ViewHelp_x/2)+170,25  to ViewHelp_x-10, 55, "TgtLang", "Target Language Code", targetLang$, Stackview$+"1"
+	dropbox (ViewHelp_x/2)+50, 25 to (ViewHelp_x/2)+90,55, "Languages","",Stackview$+"1"
+	output$= LANGUAGE_AVAILABLE$
+	dim Language$(1)
+	num=split(output$,Language$(),"\n")
+	for i=1 to num
+	if(oldtext1$=left$(Language$(i),instr(output$,"_"))) then
+		
+	else
+		oldtext$=left$(Language$(i),instr(output$,"_"))
+		if (instr(oldtext$,"_")) then
+		else
+		oldtext1$=oldtext$
+		dropbox add "Languages",oldtext1$
+		endif		
+	endif
+	
+	
+next i
+	button (ViewHelp_x/2)+120,25 TO (ViewHelp_x/2)+150,50, "takeover", ">>", Stackview$+"1"
+	layout "top, bottom, left, right", Stackview$+"1"
+	splitview 0,65 to ViewHelp_x,ViewHelp_y, "Split", true, true,  Stackview$+"1"
+	layout "top, left", "Split1"
+	text 10,10, "EngText", "English Source", "Split1"
+	layout "top, bottom, left, right", "Split1"
+	listbox 10,30 to ViewHelp_x/2 - 10,ViewHelp_y-125, "SrcList", 3, "Split1"
+	layout "bottom, left", "Split1"
+	text 10,h-115, "AddEngText", "Add Phrase", "Split1"
+
+	//layout "top, left, right", "Split2"
+	text 10,10, "TransText", "Translated Text", "Split2"
+	layout "top, bottom, left, right", "Split2"
+	listbox 10,30 to ViewHelp_x/2 - 20,ViewHelp_y-125, "TgtList", 3, "Split2"
+	layout "bottom, left",  Stackview$+"2"
+	text 10,h-115, "AddTgtText", "Add Phrase", "Split2"
+
+	layout "bottom, left, right", "Split1"
+	textcontrol 10,ViewHelp_y-100 to ViewHelp_x/2 - 20, ViewHelp_y-80, "AddSrc", "", "", "Split1"
+	layout "bottom, left, right",  Stackview$+"2"
+	textcontrol 10,ViewHelp_y-100 to ViewHelp_x/2-20, ViewHelp_y-80, "AddTgt", "", "", "Split2"
+end sub
+sub Footer(footerText$, window$, size)
+	local w
+	local footer$
+	//y=WINDOW GET window$, "Height"
+	//print y
+	footer$ = window$+"Footer"
+	layout "none", window$
+	view 0, 560 to size, 600, footer$, window$
+	draw set "bgcolor", 230,230,255, footer$
+	draw set "lowcolor", 230,230,255, footer$
+	if(peek$("os") = "Haiku") then
+		draw set "Noto Sans Display, 18", footer$
+		
+	else
+		draw set "Swis721 BT, 18", footer$
+	endif
+	draw set "highcolor", 0,0,0, footer$
+	w = draw get "Text-width", footerText$, footer$
+	//draw text 10,25, footerText$, footer$
+	draw text 10,25, "Copyright:  Jan Bungeroth (2011) | ", footer$
+	TEXTURL 200,15, "url", footerText$, "http://software.besly.de", footer$
+	draw set "highcolor", 239,239,239, footer$
+	draw line 0,1 to size,1, footer$
+	draw set "highcolor", 185,185,185, footer$
+	draw line 0,0 to size,0, footer$
+	//button size-50,10 to size-10,30, "Info", "Info", footer$
+	return
+end sub
+sub CloseWindows()
+	window close Start_FensterName$
+end sub
+
+sub OpenEditor(msg$)
+	local h, w, pos
+	local entry$, list$, t$
+	local editorFinished, i, n
+
+	h = peek("desktopheight") / 2
+	w = peek("desktopwidth") / 2
+	window open w-300,h - 40 to w+300,h+40, "EditorWindow", ""
+	window set "EditorWindow", "look", "bordered"
+	window set "EditorWindow", "feel", "modal-app"
+
+	pos = val(right$(msg$, len(msg$)-16))
+	list$ = left$(msg$, 7)
+	entry$ = listbox get$ list$, pos
+
+	localize stop
+	textcontrol 10,10 to 580,35, "Editor", "", entry$, "EditorWindow"
+	localize
+	button 300,40 to 390,70, "Cancel", "Cancel", "EditorWindow"
+	button 400,40 to 490,70, "Delete", "Delete", "EditorWindow"
+	button 500,40 to 590,70, "Commit", "Commit", "EditorWindow"
+	option set "Editor", "Focus", true
+
+	dim editorMsg$(1)
+	editorFinished = false
+	while(not editorFinished)
+		n = split(message$, editorMsg$(), "|")
+		for i = 1 to n
+			if(editorMsg$(i) = "_QuitRequested") exit(1)
+			if(editorMsg$(i) = "Cancel") editorFinished = true
+			if(editorMsg$(i) = "Commit") then
+				listbox remove list$, pos
+				t$ = textcontrol get$ "Editor"
+				localize stop
+				listbox add list$, pos, t$
+				localize 
+				listbox select list$, pos
+				editorFinished = true
+			endif
+			if(editorMsg$(i) = "Delete") then
+				listbox remove list$, pos
+				listbox select list$, 0
+				editorFinished = true
+			endif
+		next i
+	wend
+
+	window close "EditorWindow"
+end sub
+
+sub NewLocale()
+	local selected
+	selected = alert "All existing data will be lost!\n\nAre you sure?", "Yes", "No", "", "warning"
+	if(selected = 1) then
+		ClearAll()
+	endif
+end sub
+
+sub OpenLocale()
+	local readno, n
+	local line$
+	print lastdir$
+	file$ = filepanel "Load-File", "Open Catalog", lastdir$, ""
+	
+	print "file$: "+file$
+	if(file$ = "") return
+	
+	ClearAll()
+	lastdir$ = left$(file$, rinstr(file$, "/"))
+
+	readno = open(file$, "r")
+	if(readno = 0) then
+		alert translate$("Error reading file\n") + peek$("error"), "Ok", "stop"
+		return
+	endif
+	
+	line input #readno line$
+	dim tabs$(1)
+	n = split(line$, tabs$(), "\t")
+	if(n <> 4) then
+		alert "Error reading file\n", "Ok", "stop"
+		close(readno)
+		return
+	endif
+	if(tabs$(2) <> "en") then
+	//if(tabs$(2) <> "english") then
+		targetLang$ = tabs$(2)
+	else
+		targetLang$ = ""
+	endif
+	mime$ = tabs$(3)
+
+	textcontrol set "TgtLang", targetLang$
+	textcontrol set "Mime", mime$
+	
+	while(not eof(readno))
+		line input #readno line$
+		n = split(line$, tabs$(), "\t")
+		if(n <> 4) then
+			alert "Error reading file\n", "Ok", "stop"
+			close(readno)
+			return
+		endif
+		localize stop
+		listbox add "SrcList", tabs$(1)
+		localize 
+		if(targetLang$ <> "") then
+			listbox add "TgtList", tabs$(4)
+		endif
+	wend
+	close(readno)
+end sub
+
+sub ClearAll()
+	listbox clear "SrcList"
+	listbox clear "TgtList"
+	textcontrol clear "AddSrc"
+	textcontrol clear "AddTgt"
+	mime$ = "x-vnd."
+	textcontrol set "Mime", mime$
+end sub
+
+sub ImportZETA()
+	local file$, line$
+	file$ = filepanel "load-file", "Import ZETA Locale", lastdir$,""
+	if(file$ <> "") then
+		ClearAll()
+		lastdir$ = left$(file$, rinstr(file$, "/"))
+		open file$ for reading as #1
+		while(not eof(#1))
+			line input #1 line$
+			ParseZETA(line$)
+		wend
+		close #1
+		file$ = right$(file$, len(file$) - rinstr(file$, "/"))
+		if(lower$(right$(file$,2)) = mid$(file$,len(file$)-3,2)) then
+			targetLang$ = lower$(right$(file$,2))
+		else
+			targetLang$ = mid$(file$,len(file$)-3,2) + "_" + lower$(right$(file$,2))
+		endif
+		textcontrol set "TgtLang", targetLang$
+		mime$ = "x-vnd." + left$(file$, instr(file$, ".") - 1)
+		textcontrol set "Mime", mime$
+		if(warnDuplicates) then
+			warnDulicates = false
+			alert "Duplicate source lines were skipped.", "Ok", "warning"
+		endif	
+	endif
+end sub
+
+sub ParseZETA(line$)
+	local i, counter
+	local a$, b$, m$
+
+	line$ = trim$(line$)
+	if(left$(line$,1) <> "#") then
+		counter = 0
+		for i = 1 to len(line$)
+			m$ = mid$(line$, i, 1)
+			if(m$ = chr$(34) and (mid$(line$, i-1, 1) <> chr$(92))) then
+				counter = counter + 1
+			endif
+			if(counter = 1) a$ = a$ + m$
+			if(counter = 3) b$ = b$ + m$
+		next i
+		if(trim$(a$) <> "") then
+			a$ = right$(a$, len(a$) - 1)
+			b$ = right$(b$, len(b$) - 1)
+			if(a$ = "_key") then
+				if(IsUnique(b$)) then
+					localize stop
+					listbox add "SrcList", b$
+					localize 
+				else
+					warnDuplicates = true
+				endif
+			elsif(a$ = "_value") then
+					listbox add "TgtList", b$
+			else
+				if(IsUnique(a$)) then
+					localize stop
+					listbox add "SrcList", a$
+					localize 
+					listbox add "TgtList", b$
+				else
+					warnDuplicates = true
+				endif
+			endif
+		endif
+	endif
+end sub
+
+sub IsUnique(entry$)
+	local i
+	local t$
+
+	for i = 1 to listbox count "SrcList"
+		t$ = listbox get$ "SrcList", i
+		if(t$ = entry$) return false
+	next i
+	return true
+end sub
+
+sub SaveLocale()
+	local fileno, i, writerno, n
+	local entry$, file$, saveFile$
+
+	targetLang$ = textcontrol get$ "TgtLang"
+
+	if(targetLang$ <> "") then
+		saveFile$ = targetLang$ + ".catalog"
+	else
+		saveFile$ = "en.catalog"
+	endif
+	dir$ = filepanel "Save-File", "Save Catalog", lastdir$, saveFile$
+	if(dir$ = "") return false
+
+	lastdir$ = left$(dir$, rinstr(dir$, "/") - 1)
+
+	mime$ = textcontrol get$ "Mime"
+	
+	if(mime$ = "" or mime$ = "x-vnd.") then
+		alert "Mime type invalid.\n\nA valid mime type has the form:\nx-vnd.ApplicationName", "Ok", "warning"
+		return false
+	endif
+	file$ = right$(mime$, len(mime$) - instr(mime$, "."))
+//print file$
+	fileno = open(file$ + ".tmp", "w")
+	if(fileno = 0) then
+		alert translate$("Error writing file\n") + peek$("error"), "Ok", "stop"
+		return false
+	endif
+
+	for i = 1 to listbox count "SrcList"
+		entry$ = listbox get$ "SrcList", i
+		entry$ = "B_CATKEY\"" + entry$ + "\""
+		print #fileno entry$
+	next i
+	close fileno
+	print "collectcatkeys -l en -s " + mime$ + " " + file$ + ".tmp"
+	system("collectcatkeys -lp English -s " + mime$ + " " + file$ + ".tmp") //en -> english
+	
+	fileno = open(file$ + ".catkeys", "r")
+	if(targetLang$ <> "") then
+		writerno = open(lastdir$ + "/en.catalog", "w")
+	else
+		writerno = open(dir$, "w")
+	endif
+	if(fileno = 0 or writerno = 0) then
+		alert translate$("Error reading or writing file\n") + peek$("error"), "Ok", "stop"
+		return false
+	endif
+
+	line input #fileno entry$
+	dim tabs$(1)
+	n = split(entry$, tabs$(), "\t")
+	if(n <> 4) then
+		alert "Error reading file\n", "Ok", "stop"
+		close(writerno)
+		close(fileno)
+		return false
+	endif
+	print #writerno tabs$(1) + "\tEnglish\t" + tabs$(3) + "\t" + tabs$(4)
+	//print #writerno tabs$(1) + "\ten\t" + tabs$(3) + "\t" + tabs$(4)
+	for i = 1 to listbox count "SrcList"
+		entry$ = listbox get$ "SrcList", i
+		print #writerno entry$ + "\t\t\t" + entry$
+	next i
+	close(writerno)
+	close(fileno)
+		
+	system("rm " + file$ + ".catkeys")
+	if(targetLang$ <> "") then
+		fileno = open(lastdir$ + "/en.catalog", "r")
+		writerno = open(dir$, "w")
+		if(fileno = 0 or writerno = 0) then
+			alert translate$("Error reading or writing file\n") + peek$("error"), "Ok", "stop"
+			return false
+		endif
+
+		line input #fileno entry$
+		dim tabs$(1)
+		n = split(entry$, tabs$(), "\t")
+		if(n <> 4) then
+			alert "Error reading file\n", "Ok", "stop"
+			close(writerno)
+			close(fileno)
+			return false
+		endif
+		print tabs$(1) + "\t" + targetLang$ + "\t" + tabs$(3) + "\t" + tabs$(4)
+		print #writerno tabs$(1) + "\t" + targetLang$ + "\t" + tabs$(3) + "\t" + tabs$(4)
+		i = 1
+		while(not eof(fileno))
+			line input #fileno entry$
+			n = split(entry$, tabs$(), "\t")
+			if(n <> 4) then
+				alert "Error reading file\n", "Ok", "stop"
+				close(writerno)
+				close(fileno)
+				return false
+			endif
+			print #writerno tabs$(1) + "\t\t\t" + GetTarget$(tabs$(1))
+			print tabs$(1) + "\t\t\t" + GetTarget$(tabs$(1))
+			i = i + 1
+		wend
+
+		close(writerno)
+		close(fileno)
+	else
+		alert "No target language specified.\nOnly the English catalog was generated.", "Ok", "warning"
+		endif
+	system("rm " + file$ + ".tmp")
+	return true
+end sub
+
+sub InstallLocale()
+	local inst$
+	print "Installpath:"+INSTALLPATH$
+	print "mime:"+mime$
+	inst$ = INSTALLPATH$ + "/" + mime$
+	system("mkdir -p " + inst$)
+	if(targetLang$ <> "") then
+		print "linkcatkeys -l english -s "+mime$+" -o "+inst$+"/en.catalog "+lastdir$+"/en.catalog"
+		print "linkcatkeys -l "+targetLang$+" -s "+mime$+" -o "+inst$+"/"+targetLang$+".catalog "+dir$
+		system("linkcatkeys -l english -s "+mime$+" -o "+inst$+"/en.catalog "+lastdir$+"/en.catalog")		
+		system("linkcatkeys -l "+targetLang$+" -s "+mime$+" -o  "+inst$+"/"+targetLang$+".catalog "+dir$)
+	else
+		system("linkcatkeys -l en -s "+mime$+" -o "+inst$+"/en.catalog "+dir$)
+		print "linkcatkeys -l english -s "+mime$+" -o "+inst$+"/en.catalog "+dir$
+	endif
+	alert "Catalogs saved and installed.", "Ok", "info"
+end sub
+
+sub GetTarget$(source$)
+	local t$
+	local i
+
+	for i = 1 to listbox count "SrcList"
+		t$ = listbox get$ "SrcList", i
+		if(t$ = source$) then
+			if(i <= listbox count "TgtList") then
+				return listbox get$ "TgtList", i
+			else
+				return ""
+			endif
+		endif
+	next i
+	return ""
+end sub
+
+
+
+sub Help()
+	
+	STV3_y = VIEW GET "STV3", "Height"
+	STV3_x = VIEW GET "STV3", "Width"
+	//view 0,0 to 400,h-350, "HelpText",  Stackview$+"3"
+	View 0,30 to STV3_x, STV3_y-50, "HelpText", Stackview$+"3" //Start_FensterName$
+	STV3_ya = VIEW GET "HelpText", "Height"
+	STV3_xa = VIEW GET "HelpText", "Width"
+	
+	
+	//draw set "bgcolor", 255,255,255, "HelpText"
+	//draw set "highcolor", "Panel-Background-Color, Lighten-1-Tint", "HelpWindow"
+	//draw line 0,h-347 to 400,h-347, "HelpWindow"
+	//draw set "highcolor", "Panel-Background-Color, Darken-1-Tint", "HelpWindow"
+	//draw line 0,h-348 to 400,h-348, "HelpWindow"
+
+	button 10,STV3_y-40 to 40,STV3_y-10, "HelpBack","<<",  Stackview$+"3"
+	option set "HelpBack", "enabled", false
+	
+	button STV3_x-40,STV3_y-40 to STV3_x-10,STV3_y-10, "HelpForward",">>",Stackview$+"3"
+	button (STV3_x/2)-50,STV3_y-40 to (STV3_x/2)+50,STV3_y-10, "close", "Close", Stackview$+"3"
+
+	textedit 10,10 to STV3_xa-10,STV3_ya-10, "Help", 1, "HelpText"
+	textedit set "Help", "editable", false
+
+	restore Pages
+	read maxPages
+
+	currentPage = 1
+	ShowHelpPage(currentPage)
+
+end sub
+
+sub ShowHelpPage(num)
+	local lines, i
+	local line$
+
+	textedit clear "Help"
+	restore "Page" + str$(num)
+	read lines
+	for i = 1 to lines
+		read line$
+		textedit add "Help", translate$(line$)
+	next i
+end sub
+
+// Help pages
+label Pages
+data 4
+
+label Page1
+data 9 // data lines for this page
+data "Localizer helps you to bring localization to your Haiku applications.\n\n"
+data "Localization is done using special catalog files. These catalog files are then compiled into BMessages and stored in a specific directory. The directory and the catalog files are signed by an application mimetype.\n\n"
+data "How to use Localizer:\n\n"
+data "1. Add the English strings of your program to the left list and their translations into the right list.\n\n"
+data "2. Enter the translation short code for the target language and the mimetype of your program.\n\n"
+data "3. 'Save and Install' will save your translations locally and install their compiled version to /boot/home/config/non-packaged/data/locale/catalogs/\n\n"
+data "Make sure, both lists are also in sync!\n\n"
+data "The language code consists of a two letter country code (e.g. de for Germany or nl for Netherlands) or a combined code if the language code differs from the country code (e.g. nl_be for Dutch in Belgium).\n\n"
+data "The mimetype identifies the application. An application mimetype usually has the format: x-vnd.ApplicationName"
+
+label Page2
+data 9
+data "Importing ZETA locale files:\n\n"
+data "Localizer allows you to import old ZETA locale files.\n\n"
+data "Currently Localizer does feature context support, so all source strings are allowed only once. If there are several equal English strings in the ZETA file, only the first one is imported. The others are ignored.\n\n"
+data "Localizer supports ZETA files using the format:\n"
+data "  \"English string\"     <tab>    \"Target string\"\n\n"
+data "And also this format:\n"
+data "  \"_key\" = \"English string\"\n"
+data "  \"_value\" = \"Target string\"\n"
+data "(Note: _key and _value need to be on separate lines.)"
+
+label Page3
+data 9
+data "How to use localization in yab programs:\n\n"
+data "First you have to load the locale catalog with the mimetype name:\n  localize \"x-vnd.MyApplication\"\n\n"
+data "All widgets will now automatically translate all their strings.\n\n"
+data "To translate a specific string use:\n  translate$(myString$)\n\n"
+data "To translate a string separated with colons : use:\n  menu translate$(myString$)\nThis is useful for translating menu entries because menu messages are separated with :\n\n"
+data "A new feature allows you to turn the automatic translation of widget strings off and on again.\n"
+data "To turn the automatic translation off, use:\n  localize stop\n\n"
+data "Notice: Keep in mind that the widgets doesn't work correct anymore! If you want to get back to a working widgets, turn on wirh the following command.\n\n"
+data "To turn it on again, use:\n  localize"
+
+label Page4
+data 5
+data "How to use localization in C++ programs:\n\n"
+data "First, include Catalog.h and Locale.h:\n  #include <Catalog.h>\n  #include <Locale.h>\n\n"
+data "Within your code, now you can simply translate a string with:\n  B_TRANSLATE(myString);\n\n"
+data "The locale kit will search for the catalog files associated with your application's signature mimetype.\n\n"
+data "To link your program, add the locale and localestub libraries:\n  -l locale -l localestub"
+
+
+sub About()
+	STV2_y = VIEW GET "STV2", "Height"
+	STV2_x = VIEW GET "STV2", "Width"
+	View 0,5 to STV2_x, STV2_y, "View_About", "STV2" //Start_FensterName$
+	STV2_y = VIEW GET "View_About", "Height"
+	STV2_x = VIEW GET "View_About", "Width"
+	Boxview STV2_x-200, STV2_y  to STV2_x-10,STV2_y,  "orig", "", 3, "View_About"
+	
+  	//DRAW TEXT 10,30, "BeSly Software Solutions", "View_About"
+  	//DRAW LINE 0,40 TO View_breite_box,41, "View_About" 
+  	 	  	
+  	DRAW TEXT 10,60, "Name:", "View_About"
+  	DRAW TEXT 10,80, "Version / Build:", "View_About"
+  	DRAW TEXT 10,100, "Version Status:", "View_About"
+  	DRAW TEXT 10,120, "Developers:", "View_About"  
+  	DRAW TEXT 10,140, "Contact:", "View_About"
+  	DRAW TEXT 10,160, "Website:", "View_About"
+  	DRAW TEXT 10,180, "Bug-Reporting:", "View_About"	
+   	
+   	DRAW TEXT 150,60, ProgrammName$, "View_About"
+  	DRAW TEXT 150,80, "0.0.5 / 30.05.2021", "View_About"
+  	DRAW TEXT 150,100, "Alpha", "View_About"
+  	DRAW TEXT 150,120, "Jan Bungeroth / Lorglas", "View_About"
+  	DRAW SET "system-plain,regular,16,regular,0,45" ,"View_About"
+  	TEXTURL 150,131, "email", "webmaster@besly.de", "webmaster@besly.de", "View_About"  	
+  	TEXTURL 150,151, "website", "http://software.besly.de", "http://software.besly.de", "View_About"   	
+  	TEXTURL 150,167, "Bug-Report", "http://trac.besly.de", "http://trac.besly.de", "View_About" 
+  	
+  	TEXTEDIT 10,200 TO STV2_x-10, STV2_y-40, "not_implemented", 0, "View_About"
+  	TEXTEDIT SET "not_implemented", "bold", "12"
+  	textedit add "not_implemented", "New in this Revision:\n"
+  	TEXTEDIT SET "not_implemented", "plain", "12"
+  	textedit add "not_implemented", "- updated to yab version 1.8 (lorglas)\n"
+	textedit add "not_implemented", "- Language code dropbox added.(lorglas)\n"
+  	textedit add "not_implemented", "- Bugfixes and optical fixes (lorglas)\n"
+	textedit add "not_implemented", "\n"
+	TEXTEDIT SET "not_implemented", "bold", "12"
+  	textedit add "not_implemented", "New in this Revision without Version Number:\n"
+  	TEXTEDIT SET "not_implemented", "plain", "12"
+	textedit add "not_implemented", "- Original Localizer for Haiku from 2011 by Jan Bungeroth\n"
+  	TEXTEDIT SET "not_implemented", "editable", false
+	button (STV2_x/2)-50, STV2_y-30 to (STV2_x/2)+50, STV2_y-10, "close", "Close",  "View_About"	
+end sub
+
+//sub About()
+	//alert "Localizer for Haiku\n\n2011 by Jan Bungeroth", "Ok", "idea"
+//end sub
