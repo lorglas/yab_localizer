@@ -260,12 +260,15 @@ sub OpenMainWindow()
 	textcontrol 10,25 to (ViewHelp_x/2)-20,55, "Mime", "Mime Type", mime$,  Stackview$+"1"
 	textcontrol (ViewHelp_x/2)+170,25  to ViewHelp_x-10, 55, "TgtLang", "Target Language Code", targetLang$, Stackview$+"1"
 	dropbox (ViewHelp_x/2)+50, 25 to (ViewHelp_x/2)+90,55, "Languages","",Stackview$+"1"
-	output$= LANGUAGE_AVAILABLE$
+	output$= LANGUAGE_AVAILABLE$("code")
+	
+	//print output$
 	dim Language$(1)
 	num=split(output$,Language$(),"\n")
 	for i=1 to num
+	//print num
 	if(oldtext1$=left$(Language$(i),instr(output$,"_"))) then
-		
+		dropbox add "Languages",oldtext1$
 	else
 		oldtext$=left$(Language$(i),instr(output$,"_"))
 		if (instr(oldtext$,"_")) then
@@ -392,10 +395,10 @@ end sub
 sub OpenLocale()
 	local readno, n
 	local line$
-	print lastdir$
-	file$ = filepanel "Load-File", "Open Catalog", lastdir$, ""
+	//print lastdir$
+	file$ = filepanel "Load-File", "Open Catalog", lastdir$,""
 	
-	print "file$: "+file$
+	//print "file$: "+file$
 	if(file$ = "") return
 	
 	ClearAll()
@@ -567,10 +570,10 @@ sub SaveLocale()
 	for i = 1 to listbox count "SrcList"
 		entry$ = listbox get$ "SrcList", i
 		entry$ = "B_CATKEY\"" + entry$ + "\""
-		print #fileno entry$
+		//print #fileno entry$
 	next i
 	close fileno
-	print "collectcatkeys -l en -s " + mime$ + " " + file$ + ".tmp"
+	//print "collectcatkeys -l en -s " + mime$ + " " + file$ + ".tmp"
 	system("collectcatkeys -lp English -s " + mime$ + " " + file$ + ".tmp") //en -> english
 	
 	fileno = open(file$ + ".catkeys", "r")
@@ -620,7 +623,7 @@ sub SaveLocale()
 			close(fileno)
 			return false
 		endif
-		print tabs$(1) + "\t" + targetLang$ + "\t" + tabs$(3) + "\t" + tabs$(4)
+		//print tabs$(1) + "\t" + targetLang$ + "\t" + tabs$(3) + "\t" + tabs$(4)
 		print #writerno tabs$(1) + "\t" + targetLang$ + "\t" + tabs$(3) + "\t" + tabs$(4)
 		i = 1
 		while(not eof(fileno))
@@ -633,7 +636,7 @@ sub SaveLocale()
 				return false
 			endif
 			print #writerno tabs$(1) + "\t\t\t" + GetTarget$(tabs$(1))
-			print tabs$(1) + "\t\t\t" + GetTarget$(tabs$(1))
+			//print tabs$(1) + "\t\t\t" + GetTarget$(tabs$(1))
 			i = i + 1
 		wend
 
@@ -648,8 +651,8 @@ end sub
 
 sub InstallLocale()
 	local inst$
-	print "Installpath:"+INSTALLPATH$
-	print "mime:"+mime$
+	//print "Installpath:"+INSTALLPATH$
+	//print "mime:"+mime$
 	inst$ = INSTALLPATH$ + "/" + mime$
 	system("mkdir -p " + inst$)
 	if(targetLang$ <> "") then

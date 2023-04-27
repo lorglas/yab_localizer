@@ -236,7 +236,7 @@ sub OpenLocale()
 	local readno, n
 	local line$
 
-	file$ = filepanel "load-file", "Open Catalog", lastdir$
+	file$ = filepanel "load-file", "Open Catalog", lastdir$,""
 	if(file$ = "") return
 	
 	ClearAll()
