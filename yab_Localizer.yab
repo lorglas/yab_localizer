@@ -86,7 +86,15 @@ sub MainMessageLoop()
 			case "takeover"
 				item$=DROPBOX GET$ "Languages", station
 				print item$
-				TEXTCONTROL SET "TgtLang", item$
+				print station
+				output1$= LANGUAGE_AVAILABLE$("CD_with_index")
+	
+				dim CodeLanguage$(1)
+				num=split(output1$,CodeLanguage$(),"\n")	
+				x=arraysize(CodeLanguage$(),1)	
+				print x
+				
+				TEXTCONTROL SET "TgtLang", mid$(CodeLanguage$(station),instr(CodeLanguage$(station),":")+1)		
 			break
 			case "HelpForward"
 				
@@ -259,27 +267,28 @@ sub OpenMainWindow()
 	//draw text 10,40, "Mime Type", Stackview$+"1"
 	textcontrol 10,25 to (ViewHelp_x/2)-20,55, "Mime", "Mime Type", mime$,  Stackview$+"1"
 	textcontrol (ViewHelp_x/2)+170,25  to ViewHelp_x-10, 55, "TgtLang", "Target Language Code", targetLang$, Stackview$+"1"
-	dropbox (ViewHelp_x/2)+50, 25 to (ViewHelp_x/2)+90,55, "Languages","",Stackview$+"1"
-	output$= LANGUAGE_AVAILABLE$("code")
+	dropbox (ViewHelp_x/2)+0, 25 to (ViewHelp_x/2)+105,55, "Languages","",Stackview$+"1"
+	output$= LANGUAGE_AVAILABLE$("RN_with_index")
 	
-	//print output$
+	
 	dim Language$(1)
 	num=split(output$,Language$(),"\n")
-	for i=1 to num
-	//print num
-	if(oldtext1$=left$(Language$(i),instr(output$,"_"))) then
-		dropbox add "Languages",oldtext1$
-	else
-		oldtext$=left$(Language$(i),instr(output$,"_"))
-		if (instr(oldtext$,"_")) then
+	
+	x=arraysize(Language$(),1)	
+	//print x
+	
+	for i=1 to x //step 2
+			
+		if(oldtext1$=mid$(Language$(i),instr(Language$(i),":")+1)) then
+			dropbox add "Languages",oldtext1$
 		else
-		oldtext1$=oldtext$
-		dropbox add "Languages",oldtext1$
-		endif		
-	endif
-	
-	
-next i
+			//print mid$(Language$(i),)
+			oldtext$=mid$(Language$(i),instr(Language$(i),":")+1)			
+				
+				dropbox add "Languages",Language$(i) //oldtext$
+				oldtext1$=oldtext$	
+		endif	
+	next i
 	button (ViewHelp_x/2)+120,25 TO (ViewHelp_x/2)+150,50, "takeover", ">>", Stackview$+"1"
 	layout "top, bottom, left, right", Stackview$+"1"
 	splitview 0,65 to ViewHelp_x,ViewHelp_y, "Split", true, true,  Stackview$+"1"
